@@ -69,6 +69,9 @@ class HBC_POD_LEDGER {
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Ledger.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Reconciliation.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Participation.php';
+        require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Referral.php';
+        require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/NWPLicensing.php';
+        require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Licensing.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Rest.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Admin.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Services/DiscordService.php';

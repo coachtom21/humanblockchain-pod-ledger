@@ -37,7 +37,7 @@ jQuery(document).ready(function($) {
             },
             data: JSON.stringify(data),
             success: function(response) {
-                $('#hbc-scan1-result').html('<p class="success">Scan 1 initiated successfully. Entry ID: ' + response.entry_id + '</p>');
+                $('#hbc-scan1-result').html('<p class="success">Seller pledge issued (pending buyer confirmation). Entry ID: ' + response.entry_id + '</p>');
                 $('#hbc-scan2').show();
             },
             error: function(xhr) {
@@ -68,7 +68,11 @@ jQuery(document).ready(function($) {
             },
             data: JSON.stringify(data),
             success: function(response) {
-                $('#hbc-scan2-result').html('<p class="success">Proof of Delivery confirmed! Entry ID: ' + response.entry_id + '</p>');
+                let message = 'Buyer confirmed delivery. Pledge matures in 8-12 weeks. Entry ID: ' + response.entry_id;
+                if (response.nwp_issued) {
+                    message += '<br>NWP service credential issued.';
+                }
+                $('#hbc-scan2-result').html('<p class="success">' + message + '</p>');
             },
             error: function(xhr) {
                 $('#hbc-scan2-result').html('<p class="error">Error: ' + xhr.responseJSON.message + '</p>');

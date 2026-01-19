@@ -59,6 +59,24 @@
             </div>
             
             <div class="hbc-form-group">
+                <label for="discord-user-id" class="hbc-label">Discord User ID <span style="color: #ff4444;">*</span></label>
+                <input type="text" id="discord-user-id" class="hbc-input" placeholder="123456789012345678" required>
+                <p class="hbc-microcopy">Discord connection is required. Enable Developer Mode in Discord, then right-click your profile to copy User ID.</p>
+            </div>
+            
+            <div class="hbc-form-group">
+                <label for="discord-username" class="hbc-label">Discord Username <span style="color: #ff4444;">*</span></label>
+                <input type="text" id="discord-username" class="hbc-input" placeholder="username#1234" required>
+                <p class="hbc-microcopy">Your Discord username (e.g., username#1234)</p>
+            </div>
+            
+            <div class="hbc-form-group">
+                <label for="discord-invite-code" class="hbc-label">Discord Invite Code (optional)</label>
+                <input type="text" id="discord-invite-code" class="hbc-input" placeholder="Leave blank if not referred">
+                <p class="hbc-microcopy">If you were referred by someone, enter their Discord invite code here.</p>
+            </div>
+            
+            <div class="hbc-form-group">
                 <label class="hbc-toggle">
                     <input type="checkbox" id="accept-license" name="accept_license" required>
                     <span class="hbc-toggle-label">I accept the <?php echo esc_html(HBC_LICENSE_TITLE); ?></span>
@@ -214,10 +232,18 @@ jQuery(document).ready(function($) {
         const deviceId = $('#device-id').val();
         const platform = $('#platform').val();
         const timezone = $('#timezone').val();
+        const discordUserId = $('#discord-user-id').val();
+        const discordUsername = $('#discord-username').val();
+        const discordInviteCode = $('#discord-invite-code').val();
         const acceptLicense = $('#accept-license').is(':checked');
         
         if (!deviceId || !platform) {
             alert('Please fill in all required fields');
+            return;
+        }
+        
+        if (!discordUserId || !discordUsername) {
+            alert('Discord connection is required. Please provide your Discord User ID and Username.');
             return;
         }
         
@@ -247,7 +273,10 @@ jQuery(document).ready(function($) {
                 lng: geoData.lng,
                 timestamp: new Date().toISOString(),
                 timezone: timezone || null,
-                accept_license: true
+                accept_license: true,
+                discord_user_id: discordUserId,
+                discord_username: discordUsername,
+                discord_invite_code: discordInviteCode || null
             }),
             success: function(response) {
                 deviceData = response;

@@ -34,6 +34,7 @@ class Ledger {
         $insert_data = array(
             'voucher_id' => sanitize_text_field($data['voucher_id']),
             'status' => 'INITIATED',
+            'pledge_type' => 'seller_pledge', // Seller issues pledge, doesn't earn
             'seller_device_hash' => $seller_device_hash,
             'buyer_identifier_hash' => $buyer_identifier_hash,
             'order_ref' => isset($data['order_ref']) ? sanitize_text_field($data['order_ref']) : null,
@@ -85,6 +86,32 @@ class Ledger {
         $maturity_date = date('Y-m-d H:i:s', strtotime($confirmed_at . " +{$maturity_min_days} days"));
         $mature_by = date('Y-m-d H:i:s', strtotime($confirmed_at . " +{$maturity_max_days} days"));
         
+        // Get seller device info to check POC status
+        $seller_device_hash = $entry->seller_device_hash;
+        $is_in_active_poc = self::isSellerInActivePOC($seller_device_hash);
+        
+        // Recalculate allocations with routing logic
+        $allocations = json_decode($entry->allocations_json, true);
+        if (!is_array($allocations)) {
+            $allocations = self::get_default_allocations();
+        }
+        
+        // Apply routing logic for $0.40
+        $routing_note = '';
+        if ($is_in_active_poc) {
+            // Active POC: $0.40 to group pool, $0.10 to treasury
+            $allocations['patronage_group_pool'] = 0.40;
+            $allocations['patronage_treasury_reserve'] = 0.10;
+            $routing_note = 'Active POC: $0.40 to group bonus pool';
+            
+            // Add to group bonus pool
+            self::addToGroupBonusPool($entry->seller_poc_id, $entry->id, 0.40, $seller_device_hash);
+        } else {
+            // Inactive POC: $0.40 to branch treasury reserves
+            $allocations['patronage_treasury_reserve'] = 0.50; // $0.40 + $0.10
+            $routing_note = 'Inactive POC: $0.40 to branch treasury reserves';
+        }
+        
         // Update audit trail (append-only)
         $audit = json_decode($entry->audit_json, true);
         if (!is_array($audit)) {
@@ -97,8 +124,13 @@ class Ledger {
             'device_hash' => $buyer_device_hash,
             'data' => array(
                 'confirm_delivery' => true,
+                'routing' => $routing_note,
             )
         );
+        
+        // Get seller-buyer assignment info
+        $seller_coach = self::getSellerCoach($buyer_device_hash);
+        $buyer_coach = self::getBuyerCoach($seller_device_hash);
         
         // Update entry
         $update_data = array(
@@ -109,6 +141,10 @@ class Ledger {
             'lng_conf' => isset($data['lng']) ? floatval($data['lng']) : null,
             'maturity_date' => $maturity_date,
             'mature_by' => $mature_by,
+            'allocations_json' => json_encode($allocations),
+            'routing_note' => $routing_note,
+            'seller_coach_device_hash' => $seller_coach,
+            'buyer_coach_device_hash' => $buyer_coach,
             'audit_json' => json_encode($audit),
         );
         
@@ -116,7 +152,7 @@ class Ledger {
             $table,
             $update_data,
             array('id' => $entry->id),
-            array('%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s'),
+            array('%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s'),
             array('%d')
         );
         
@@ -125,6 +161,90 @@ class Ledger {
         }
         
         return $entry->id;
+    }
+    
+    /**
+     * Check if seller is in an active POC
+     */
+    private static function isSellerInActivePOC($seller_device_hash) {
+        global $wpdb;
+        $assignments_table = $wpdb->prefix . 'hbc_seller_buyer_assignments';
+        
+        // Check if seller has active buyer assignments
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $assignments_table WHERE seller_device_hash = %s AND status = 'active'",
+            $seller_device_hash
+        ));
+        
+        return $count > 0;
+    }
+    
+    /**
+     * Get seller coach for a buyer
+     */
+    private static function getSellerCoach($buyer_device_hash) {
+        global $wpdb;
+        $assignments_table = $wpdb->prefix . 'hbc_seller_buyer_assignments';
+        
+        $assignment = $wpdb->get_row($wpdb->prepare(
+            "SELECT seller_device_hash FROM $assignments_table WHERE buyer_device_hash = %s AND status = 'active' LIMIT 1",
+            $buyer_device_hash
+        ));
+        
+        return $assignment ? $assignment->seller_device_hash : null;
+    }
+    
+    /**
+     * Get buyer coach for a seller
+     */
+    private static function getBuyerCoach($seller_device_hash) {
+        // For now, return null - this would be the seller's coach in their Seller POC
+        return null;
+    }
+    
+    /**
+     * Add contribution to group bonus pool
+     */
+    private static function addToGroupBonusPool($poc_id, $ledger_entry_id, $amount, $contributor_device_hash) {
+        global $wpdb;
+        $pools_table = $wpdb->prefix . 'hbc_group_bonus_pools';
+        $contributions_table = $wpdb->prefix . 'hbc_group_bonus_contributions';
+        
+        // Get or create pool
+        $pool = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $pools_table WHERE poc_id = %s AND poc_type = 'seller' LIMIT 1",
+            $poc_id
+        ));
+        
+        if (!$pool) {
+            // Create new pool
+            $wpdb->insert($pools_table, array(
+                'poc_id' => $poc_id,
+                'poc_type' => 'seller',
+                'pool_amount' => 0.00,
+                'rotation_period' => 'monthly',
+                'created_at' => current_time('mysql'),
+            ));
+            $pool_id = $wpdb->insert_id;
+        } else {
+            $pool_id = $pool->id;
+        }
+        
+        // Add contribution
+        $wpdb->insert($contributions_table, array(
+            'pool_id' => $pool_id,
+            'ledger_entry_id' => $ledger_entry_id,
+            'contribution_amount' => $amount,
+            'contributor_device_hash' => $contributor_device_hash,
+            'contributed_at' => current_time('mysql'),
+        ));
+        
+        // Update pool amount
+        $wpdb->query($wpdb->prepare(
+            "UPDATE $pools_table SET pool_amount = pool_amount + %f WHERE id = %d",
+            $amount,
+            $pool_id
+        ));
     }
     
     /**

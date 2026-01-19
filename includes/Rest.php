@@ -105,6 +105,11 @@ class Rest {
             return new \WP_Error('license_required', 'License acceptance required to register this device.', array('status' => 400));
         }
         
+        // Require Discord connection (not optional)
+        if (empty($params['discord_user_id']) || empty($params['discord_username'])) {
+            return new \WP_Error('discord_required', 'Discord connection is required to register this device. Please connect your Discord account first.', array('status' => 400));
+        }
+        
         // Hash device ID
         $device_hash = Db::hash_device_id($params['device_id']);
         
@@ -137,6 +142,17 @@ class Rest {
             'push_token' => isset($params['push_token']) ? sanitize_text_field($params['push_token']) : null,
         );
         
+        // Process Discord invite referral if provided
+        $referral_result = null;
+        if (!empty($params['discord_invite_code'])) {
+            require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Referral.php';
+            $referral_result = Referral::processDiscordReferral(
+                sanitize_text_field($params['discord_user_id']),
+                sanitize_text_field($params['discord_invite_code']),
+                $device_hash // Will be set after device is created
+            );
+        }
+        
         // Insert device
         $insert_data = array(
             'device_hash' => $device_hash,
@@ -148,6 +164,10 @@ class Rest {
             'branch' => $branch,
             'buyer_poc_id' => $buyer_poc_id,
             'seller_poc_id' => $seller_poc_id,
+            'discord_user_id' => sanitize_text_field($params['discord_user_id']),
+            'discord_username' => sanitize_text_field($params['discord_username']),
+            'discord_connected_at' => current_time('mysql'),
+            'discord_invite_code' => isset($params['discord_invite_code']) ? sanitize_text_field($params['discord_invite_code']) : null,
             'meta' => json_encode($meta),
         );
         
@@ -168,6 +188,31 @@ class Rest {
         );
         $licensing_result = Licensing::createAcceptance($device_hash, $device_data);
         
+        // Check if Buyer POC needs binding (reached 25 buyers)
+        $buyer_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $devices_table WHERE buyer_poc_id = %s",
+            $buyer_poc_id
+        ));
+        
+        if ($buyer_count >= 25) {
+            // Bind Buyer POC to Seller POC
+            Serendipity::bindBuyerPOCToSellerPOC($buyer_poc_id);
+        }
+        
+        // Process referral if Discord invite was used
+        if ($referral_result && !is_wp_error($referral_result)) {
+            // Update referred_device_hash now that device is created
+            global $wpdb;
+            $referrals_table = $wpdb->prefix . 'hbc_referrals';
+            $wpdb->update(
+                $referrals_table,
+                array('referred_device_hash' => $device_hash),
+                array('id' => $referral_result['referral_id']),
+                array('%s'),
+                array('%d')
+            );
+        }
+        
         $response = array(
             'device_hash' => $device_hash,
             'branch' => $branch,
@@ -180,6 +225,13 @@ class Rest {
         
         if ($licensing_result['github_append'] === 'failed') {
             $response['warning'] = 'Device registered successfully, but GitHub append failed. Check reconciliation records.';
+        }
+        
+        if ($referral_result && !is_wp_error($referral_result)) {
+            $response['referral_award'] = array(
+                'yam_amount' => $referral_result['yam_amount'],
+                'usd_equivalent' => $referral_result['usd_equivalent'],
+            );
         }
         
         return rest_ensure_response($response);
@@ -230,6 +282,7 @@ class Rest {
             'entry_id' => $entry_id,
             'status' => 'INITIATED',
             'voucher_id' => $params['voucher_id'],
+            'message' => 'Seller pledge issued (pending buyer confirmation)',
         ));
     }
     
@@ -261,11 +314,33 @@ class Rest {
             return $entry_id;
         }
         
-        return rest_ensure_response(array(
+        // Get ledger entry to find seller_device_hash
+        global $wpdb;
+        $ledger_table = $wpdb->prefix . 'hbc_ledger';
+        $entry = $wpdb->get_row($wpdb->prepare(
+            "SELECT seller_device_hash FROM $ledger_table WHERE id = %d",
+            $entry_id
+        ));
+        
+        // Check if NWP should be issued
+        if ($entry && $entry->seller_device_hash) {
+            require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/NWPLicensing.php';
+            $nwp_result = NWPLicensing::issueCredential($params['voucher_id'], $entry->seller_device_hash);
+        }
+        
+        $response = array(
             'entry_id' => $entry_id,
             'status' => 'CONFIRMED',
             'voucher_id' => $params['voucher_id'],
-        ));
+            'message' => 'Buyer confirmed delivery. Pledge matures in 8-12 weeks.',
+        );
+        
+        if (isset($nwp_result) && !is_wp_error($nwp_result)) {
+            $response['nwp_issued'] = true;
+            $response['nwp_credential'] = $nwp_result;
+        }
+        
+        return rest_ensure_response($response);
     }
     
     public function get_ledger($request) {
