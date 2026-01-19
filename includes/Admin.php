@@ -146,6 +146,15 @@ class Admin {
             update_option('hbc_maturity_min_days', intval($_POST['maturity_min_days']));
             update_option('hbc_maturity_max_days', intval($_POST['maturity_max_days']));
             
+            // GitHub settings
+            if (isset($_POST['github_token'])) {
+                update_option('hbc_github_token', sanitize_text_field($_POST['github_token']));
+            }
+            update_option('hbc_github_owner', sanitize_text_field($_POST['github_owner']));
+            update_option('hbc_github_repo', sanitize_text_field($_POST['github_repo']));
+            update_option('hbc_github_branch', sanitize_text_field($_POST['github_branch']));
+            update_option('hbc_github_logs_path', sanitize_text_field($_POST['github_logs_path']));
+            
             echo '<div class="notice notice-success"><p>Settings saved.</p></div>';
         }
         

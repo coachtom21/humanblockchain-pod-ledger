@@ -48,7 +48,40 @@
             </tr>
         </table>
         
-        <h2>Integration Settings (Stubs)</h2>
+        <h2>GitHub Integration (Licensing Protocol)</h2>
+        <table class="form-table">
+            <tr>
+                <th><label for="github_token">GitHub Token (Fine-grained)</label></th>
+                <td>
+                    <?php 
+                    $github_token = get_option('hbc_github_token', '');
+                    $display_token = $github_token ? substr($github_token, 0, 8) . '...' . substr($github_token, -4) : '';
+                    ?>
+                    <input type="password" id="github_token" name="github_token" value="<?php echo esc_attr($github_token); ?>" class="regular-text">
+                    <?php if ($display_token): ?>
+                        <p class="description">Current: <?php echo esc_html($display_token); ?></p>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="github_owner">GitHub Owner/Org</label></th>
+                <td><input type="text" id="github_owner" name="github_owner" value="<?php echo esc_attr(get_option('hbc_github_owner', '')); ?>" class="regular-text" placeholder="e.g., SmallStreetApplied"></td>
+            </tr>
+            <tr>
+                <th><label for="github_repo">GitHub Repository</label></th>
+                <td><input type="text" id="github_repo" name="github_repo" value="<?php echo esc_attr(get_option('hbc_github_repo', 'SmallStreetApplied-Atlanta')); ?>" class="regular-text"></td>
+            </tr>
+            <tr>
+                <th><label for="github_branch">GitHub Branch</label></th>
+                <td><input type="text" id="github_branch" name="github_branch" value="<?php echo esc_attr(get_option('hbc_github_branch', 'main')); ?>" class="regular-text"></td>
+            </tr>
+            <tr>
+                <th><label for="github_logs_path">Logs Path Root</label></th>
+                <td><input type="text" id="github_logs_path" name="github_logs_path" value="<?php echo esc_attr(get_option('hbc_github_logs_path', 'append-only-ledger/')); ?>" class="regular-text" placeholder="append-only-ledger/"></td>
+            </tr>
+        </table>
+        
+        <h2>Other Integration Settings (Stubs)</h2>
         <table class="form-table">
             <tr>
                 <th><label for="discord_token">Discord Token</label></th>
@@ -57,10 +90,6 @@
             <tr>
                 <th><label for="qrtiger_api_key">QRTiger API Key</label></th>
                 <td><input type="text" id="qrtiger_api_key" name="qrtiger_api_key" value="<?php echo esc_attr(get_option('hbc_qrtiger_api_key', '')); ?>" class="regular-text" placeholder="Not implemented"></td>
-            </tr>
-            <tr>
-                <th><label for="github_token">GitHub Token</label></th>
-                <td><input type="text" id="github_token" name="github_token" value="<?php echo esc_attr(get_option('hbc_github_token', '')); ?>" class="regular-text" placeholder="Not implemented"></td>
             </tr>
         </table>
         

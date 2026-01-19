@@ -75,8 +75,11 @@ class Rest {
             return wp_verify_nonce($nonce, 'wp_rest');
         }
         
-        // Check API key for non-logged-in users
+        // Check API key for non-logged-in users (X-API-Key or X-HBC-KEY)
         $api_key = $request->get_header('X-API-Key');
+        if (empty($api_key)) {
+            $api_key = $request->get_header('X-HBC-KEY');
+        }
         $stored_key = get_option('hbc_api_key');
         
         if (empty($api_key) || $api_key !== $stored_key) {
@@ -95,6 +98,11 @@ class Rest {
             if (empty($params[$field])) {
                 return new \WP_Error('missing_field', "Missing required field: $field", array('status' => 400));
             }
+        }
+        
+        // Require license acceptance
+        if (empty($params['accept_license']) || $params['accept_license'] !== true) {
+            return new \WP_Error('license_required', 'License acceptance required to register this device.', array('status' => 400));
         }
         
         // Hash device ID
@@ -149,13 +157,32 @@ class Rest {
             return new \WP_Error('db_error', 'Failed to register device', array('status' => 500));
         }
         
-        return rest_ensure_response(array(
+        // Create licensing acceptance
+        require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Licensing.php';
+        $device_data = array(
+            'lat' => floatval($params['lat']),
+            'lng' => floatval($params['lng']),
+            'branch' => $branch,
+            'buyer_poc_id' => $buyer_poc_id,
+            'seller_poc_id' => $seller_poc_id,
+        );
+        $licensing_result = Licensing::createAcceptance($device_hash, $device_data);
+        
+        $response = array(
             'device_hash' => $device_hash,
             'branch' => $branch,
             'buyer_poc_id' => $buyer_poc_id,
             'seller_poc_id' => $seller_poc_id,
             'welcome_copy' => Serendipity::get_welcome_copy($branch, $buyer_poc_id, $seller_poc_id),
-        ));
+            'acceptance_hash' => $licensing_result['acceptance_hash'],
+            'github_append' => $licensing_result['github_append'],
+        );
+        
+        if ($licensing_result['github_append'] === 'failed') {
+            $response['warning'] = 'Device registered successfully, but GitHub append failed. Check reconciliation records.';
+        }
+        
+        return rest_ensure_response($response);
     }
     
     public function pod_initiate($request) {

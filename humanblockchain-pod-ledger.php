@@ -23,6 +23,11 @@ define('HBC_POD_LEDGER_PLUGIN_BASENAME', plugin_basename(__FILE__));
 // Disclaimer constant
 define('HBC_POD_LEDGER_DISCLAIMER', 'Pledges are obligations that mature in 8-12 weeks or are settled via reconciliation moments; they are not payments.');
 
+// Licensing Protocol constants
+define('HBC_LICENSE_TITLE', 'MEGAvoter Brand Licensing Protocol');
+define('HBC_LICENSE_VERSION', '1.0');
+define('HBC_LICENSE_CORE', 'By registering this device, you accept a limited, revocable license to participate in MEGAvoter-branded Proof of Delivery (PoD) accounting. Participation records pledges—not payments—and produces append-only audit entries. Your Voice determines priorities; Proof determines truth.');
+
 /**
  * Activation hook
  */

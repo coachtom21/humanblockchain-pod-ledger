@@ -107,11 +107,32 @@ class Db {
             KEY idx_created_at (created_at)
         ) $charset_collate;";
         
+        // Licensing table
+        $licensing_table = $wpdb->prefix . 'hbc_licensing';
+        $licensing_sql = "CREATE TABLE IF NOT EXISTS $licensing_table (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            device_hash char(64) NOT NULL,
+            license_version varchar(20) NOT NULL,
+            accepted_at datetime NOT NULL,
+            lat_round decimal(8,3) DEFAULT NULL,
+            lng_round decimal(9,3) DEFAULT NULL,
+            branch varchar(50) DEFAULT NULL,
+            buyer_poc_id varchar(100) DEFAULT NULL,
+            seller_poc_id varchar(100) DEFAULT NULL,
+            acceptance_hash char(64) NOT NULL,
+            payload_json longtext DEFAULT NULL,
+            PRIMARY KEY (id),
+            KEY idx_device_hash (device_hash),
+            UNIQUE KEY acceptance_hash (acceptance_hash),
+            KEY idx_accepted_at (accepted_at)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($devices_sql);
         dbDelta($ledger_sql);
         dbDelta($reconciliation_sql);
         dbDelta($participation_sql);
+        dbDelta($licensing_sql);
     }
     
     public static function hash_device_id($device_id) {

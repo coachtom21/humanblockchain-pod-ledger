@@ -2,6 +2,12 @@
     <div style="background: white; padding: 40px; border-radius: 10px; max-width: 500px; text-align: center;">
         <h2>Is This Proof of Delivery?</h2>
         <p style="margin: 20px 0;"><?php echo esc_html(HBC_POD_LEDGER_DISCLAIMER); ?></p>
+        <div style="margin: 20px 0; text-align: left; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+            <label style="display: flex; align-items: flex-start; cursor: pointer;">
+                <input type="checkbox" id="hbc-enter-accept-license" style="margin-right: 12px; margin-top: 4px;" required>
+                <span style="font-size: 14px;">I accept the <?php echo esc_html(HBC_LICENSE_TITLE); ?>. <?php echo esc_html(HBC_LICENSE_CORE); ?></span>
+            </label>
+        </div>
         <div style="margin-top: 30px;">
             <button id="hbc-pod-yes" style="padding: 12px 30px; margin: 0 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">YES</button>
             <button id="hbc-pod-no" style="padding: 12px 30px; margin: 0 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">NO</button>

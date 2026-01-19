@@ -2,6 +2,10 @@ jQuery(document).ready(function($) {
     
     // Enter modal handlers
     $('#hbc-pod-yes').on('click', function() {
+        if (!$('#hbc-enter-accept-license').is(':checked')) {
+            alert('You must accept the MEGAvoter Brand Licensing Protocol to continue.');
+            return;
+        }
         $('#hbc-enter-modal').hide();
         $('#hbc-pod-flow').show();
     });

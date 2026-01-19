@@ -58,6 +58,16 @@
                 <input type="text" id="timezone" class="hbc-input" placeholder="e.g., America/New_York">
             </div>
             
+            <div class="hbc-form-group">
+                <label class="hbc-toggle">
+                    <input type="checkbox" id="accept-license" name="accept_license" required>
+                    <span class="hbc-toggle-label">I accept the <?php echo esc_html(HBC_LICENSE_TITLE); ?></span>
+                </label>
+                <p class="hbc-microcopy" style="margin-top: 8px; padding-left: 36px;">
+                    <?php echo esc_html(HBC_LICENSE_CORE); ?>
+                </p>
+            </div>
+            
             <div id="hbc-geo-status" class="hbc-message hbc-message-info" style="display: none;">
                 Getting location...
             </div>
@@ -204,9 +214,15 @@ jQuery(document).ready(function($) {
         const deviceId = $('#device-id').val();
         const platform = $('#platform').val();
         const timezone = $('#timezone').val();
+        const acceptLicense = $('#accept-license').is(':checked');
         
         if (!deviceId || !platform) {
             alert('Please fill in all required fields');
+            return;
+        }
+        
+        if (!acceptLicense) {
+            alert('You must accept the MEGAvoter Brand Licensing Protocol to register this device.');
             return;
         }
         
@@ -230,12 +246,18 @@ jQuery(document).ready(function($) {
                 lat: geoData.lat,
                 lng: geoData.lng,
                 timestamp: new Date().toISOString(),
-                timezone: timezone || null
+                timezone: timezone || null,
+                accept_license: true
             }),
             success: function(response) {
                 deviceData = response;
                 $('#hbc-assigned-branch').text(response.branch);
                 $('input[name="branch-preference"][value="' + response.branch + '"]').prop('checked', true).closest('.hbc-branch-option').addClass('selected');
+                
+                if (response.warning) {
+                    $('#hbc-register-result').html('<div class="hbc-message hbc-message-info">' + response.warning + '</div>');
+                }
+                
                 showStep(2);
             },
             error: function(xhr) {
