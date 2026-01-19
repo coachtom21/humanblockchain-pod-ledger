@@ -63,6 +63,7 @@ class HBC_POD_LEDGER {
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Serendipity.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Ledger.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Reconciliation.php';
+        require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Participation.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Rest.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Admin.php';
         require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Services/DiscordService.php';
@@ -88,6 +89,9 @@ class HBC_POD_LEDGER {
     public function register_shortcodes() {
         add_shortcode('hbc_enter', array($this, 'shortcode_enter'));
         add_shortcode('hbc_pod_flow', array($this, 'shortcode_pod_flow'));
+        add_shortcode('hbc_participate', array($this, 'shortcode_participate'));
+        add_shortcode('hbc_receipt', array($this, 'shortcode_receipt'));
+        add_shortcode('hbc_determine', array($this, 'shortcode_determine'));
     }
     
     public function shortcode_enter($atts) {
@@ -102,7 +106,44 @@ class HBC_POD_LEDGER {
         return ob_get_clean();
     }
     
+    public function shortcode_participate($atts) {
+        ob_start();
+        wp_enqueue_style('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.css', array(), HBC_POD_LEDGER_VERSION);
+        wp_enqueue_script('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.js', array('jquery'), HBC_POD_LEDGER_VERSION, true);
+        wp_localize_script('hbc-pod-ledger-public', 'hbcPodLedger', array(
+            'apiUrl' => rest_url('hbc/v1/'),
+            'nonce' => wp_create_nonce('wp_rest'),
+        ));
+        include HBC_POD_LEDGER_PLUGIN_DIR . 'templates/shortcode-participate.php';
+        return ob_get_clean();
+    }
+    
+    public function shortcode_receipt($atts) {
+        ob_start();
+        wp_enqueue_style('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.css', array(), HBC_POD_LEDGER_VERSION);
+        wp_enqueue_script('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.js', array('jquery'), HBC_POD_LEDGER_VERSION, true);
+        wp_localize_script('hbc-pod-ledger-public', 'hbcPodLedger', array(
+            'apiUrl' => rest_url('hbc/v1/'),
+            'nonce' => wp_create_nonce('wp_rest'),
+        ));
+        include HBC_POD_LEDGER_PLUGIN_DIR . 'templates/shortcode-receipt.php';
+        return ob_get_clean();
+    }
+    
+    public function shortcode_determine($atts) {
+        ob_start();
+        wp_enqueue_style('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.css', array(), HBC_POD_LEDGER_VERSION);
+        wp_enqueue_script('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.js', array('jquery'), HBC_POD_LEDGER_VERSION, true);
+        wp_localize_script('hbc-pod-ledger-public', 'hbcPodLedger', array(
+            'apiUrl' => rest_url('hbc/v1/'),
+            'nonce' => wp_create_nonce('wp_rest'),
+        ));
+        include HBC_POD_LEDGER_PLUGIN_DIR . 'templates/shortcode-determine.php';
+        return ob_get_clean();
+    }
+    
     public function enqueue_public_assets() {
+        wp_enqueue_style('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.css', array(), HBC_POD_LEDGER_VERSION);
         wp_enqueue_script('hbc-pod-ledger-public', HBC_POD_LEDGER_PLUGIN_URL . 'assets/public.js', array('jquery'), HBC_POD_LEDGER_VERSION, true);
         wp_localize_script('hbc-pod-ledger-public', 'hbcPodLedger', array(
             'apiUrl' => rest_url('hbc/v1/'),

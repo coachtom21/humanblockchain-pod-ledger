@@ -87,10 +87,31 @@ class Db {
             KEY idx_period_start (period_start)
         ) $charset_collate;";
         
+        // Participation table
+        $participation_table = $wpdb->prefix . 'hbc_participation';
+        $participation_sql = "CREATE TABLE IF NOT EXISTS $participation_table (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            device_hash char(64) NOT NULL,
+            session_id varchar(100) DEFAULT NULL,
+            created_at datetime NOT NULL,
+            branch_preference varchar(50) DEFAULT NULL,
+            pledge_intent varchar(50) DEFAULT NULL,
+            confirmation_flags_json longtext DEFAULT NULL,
+            allocation_preference_json longtext DEFAULT NULL,
+            user_message text DEFAULT NULL,
+            receipt_hash char(64) NOT NULL,
+            PRIMARY KEY (id),
+            KEY idx_device_hash (device_hash),
+            KEY idx_session_id (session_id),
+            KEY idx_receipt_hash (receipt_hash),
+            KEY idx_created_at (created_at)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($devices_sql);
         dbDelta($ledger_sql);
         dbDelta($reconciliation_sql);
+        dbDelta($participation_sql);
     }
     
     public static function hash_device_id($device_id) {

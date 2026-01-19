@@ -1,6 +1,8 @@
 <?php
 namespace HBC_POD_LEDGER;
 
+require_once HBC_POD_LEDGER_PLUGIN_DIR . 'includes/Participation.php';
+
 class Rest {
     
     protected static $instance = null;
@@ -45,6 +47,24 @@ class Rest {
             'methods' => 'GET',
             'callback' => array($this, 'get_device'),
             'permission_callback' => array($this, 'check_api_auth'),
+        ));
+        
+        register_rest_route('hbc/v1', '/participation/create', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'participation_create'),
+            'permission_callback' => array($this, 'check_api_auth'),
+        ));
+        
+        register_rest_route('hbc/v1', '/participation/receipt/(?P<receipt_hash>[a-f0-9]{64})', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'participation_receipt'),
+            'permission_callback' => '__return_true', // Public endpoint
+        ));
+        
+        register_rest_route('hbc/v1', '/participation/aggregate', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'participation_aggregate'),
+            'permission_callback' => '__return_true', // Public endpoint
         ));
     }
     
@@ -308,5 +328,60 @@ class Rest {
         }
         
         return rest_ensure_response($device);
+    }
+    
+    public function participation_create($request) {
+        $params = $request->get_json_params();
+        
+        // Validate required fields
+        if (empty($params['device_hash'])) {
+            return new \WP_Error('missing_field', 'Missing required field: device_hash', array('status' => 400));
+        }
+        
+        $result = Participation::create($params);
+        
+        if (is_wp_error($result)) {
+            return $result;
+        }
+        
+        return rest_ensure_response($result);
+    }
+    
+    public function participation_receipt($request) {
+        $receipt_hash = $request->get_param('receipt_hash');
+        
+        $participation = Participation::get_by_receipt_hash($receipt_hash);
+        
+        if (!$participation) {
+            return new \WP_Error('not_found', 'Receipt not found', array('status' => 404));
+        }
+        
+        // Get device info
+        global $wpdb;
+        $devices_table = $wpdb->prefix . 'hbc_devices';
+        $device = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $devices_table WHERE device_hash = %s",
+            $participation->device_hash
+        ));
+        
+        $response = array(
+            'participation' => $participation,
+            'device' => $device,
+        );
+        
+        return rest_ensure_response($response);
+    }
+    
+    public function participation_aggregate($request) {
+        $params = $request->get_query_params();
+        $range = isset($params['range']) ? sanitize_text_field($params['range']) : 'today';
+        
+        if (!in_array($range, array('today', '7d', '30d'))) {
+            $range = 'today';
+        }
+        
+        $aggregate = Participation::get_aggregate($range);
+        
+        return rest_ensure_response($aggregate);
     }
 }

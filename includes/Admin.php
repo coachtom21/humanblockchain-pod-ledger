@@ -56,6 +56,15 @@ class Admin {
         
         add_submenu_page(
             'hbc-pod-ledger',
+            'Participation',
+            'Participation',
+            'manage_options',
+            'hbc-pod-ledger-participation',
+            array($this, 'render_participation_page')
+        );
+        
+        add_submenu_page(
+            'hbc-pod-ledger',
             'Settings',
             'Settings',
             'manage_options',
@@ -114,6 +123,15 @@ class Admin {
         $recons = $wpdb->get_results("SELECT * FROM $table ORDER BY created_at DESC LIMIT 100");
         
         include HBC_POD_LEDGER_PLUGIN_DIR . 'templates/admin-reconciliation.php';
+    }
+    
+    public function render_participation_page() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'hbc_participation';
+        
+        $participations = $wpdb->get_results("SELECT * FROM $table ORDER BY created_at DESC LIMIT 100");
+        
+        include HBC_POD_LEDGER_PLUGIN_DIR . 'templates/admin-participation.php';
     }
     
     public function render_settings_page() {
