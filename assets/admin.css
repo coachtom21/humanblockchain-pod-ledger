@@ -1,0 +1,62 @@
+.hbc-admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.hbc-admin-table th,
+.hbc-admin-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.hbc-admin-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+}
+
+.hbc-admin-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+.hbc-admin-filters {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+}
+
+.hbc-admin-filters select,
+.hbc-admin-filters input {
+    margin-right: 10px;
+    padding: 5px;
+}
+
+.hbc-status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.hbc-status-initiated {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.hbc-status-confirmed {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.hbc-status-correction {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.hbc-status-reconciled {
+    background-color: #6c757d;
+    color: #fff;
+}
