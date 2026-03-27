@@ -16,5 +16,5 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /bitnami/wordpress/wp-content/themes/hello-theme-child-master
+            cd /bitnami/wordpress/wp-content/puligns/hello-theme-child-master
             git pull origin main
